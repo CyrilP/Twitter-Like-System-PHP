@@ -1,22 +1,25 @@
 <?php 
 session_start();
+if (isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
+}
 ?>
 <!DOCTYPE html>
 <html>
 <head>
 	<meta name="viewport" content="width=425px, user-scalable=no">
 
+	<link rel="stylesheet" href="css/normalize.css">
 	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
 	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
-	<link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
-	<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+	<link rel="stylesheet" href="css/twitter.css">
+	<meta charset="ISO-8859-1"> 
 	<title>Twitter-like-system-PHP</title>
 </head>
-<body style="margin-left:20px;width:300px;zoom:125%;">
-	<h3>Twitter-Like-System-PHP</h3>
-	<a href='.'>Go Home</a>
+<body>
+	<?php include "header.php"; ?>
+	<a href='.' class='btn btn-info home-button'>Go Home</a>
 	<?php
 	function getTime($t_time){
 		$pt = time() - $t_time;
@@ -33,86 +36,76 @@ $user_id = $_SESSION['user_id'];
 	if($_GET['username']){
 		include 'connect.php';
 		$username = strtolower($_GET['username']);
-		$query = mysql_query("SELECT id, username, followers, following, tweets 
+		$query = mysqli_query($conn, "SELECT id, username, followers, following, tweets 
 			FROM users 
 			WHERE username='$username'
 			");
-		mysql_close($conn);
-		if(mysql_num_rows($query)>=1){
-			$row = mysql_fetch_assoc($query);
+		mysqli_close($conn);
+		if(mysqli_num_rows($query)>=1){
+			$row = mysqli_fetch_assoc($query);
 			$id = $row['id'];
 			$username = $row['username'];
 			$tweets = $row['tweets'];
 			$followers = $row['followers'];
 			$following = $row['following'];
-			if($user_id){
+			if(isset($user_id)){
 				if($user_id!=$id){
 					include 'connect.php';
-					$query2 = mysql_query("SELECT id
+					$query2 = mysqli_query($conn, "SELECT id
 										   FROM following 
 										   WHERE user1_id='$user_id' AND user2_id='$id'
 										  ");
-					mysql_close($conn);
-					if(mysql_num_rows($query2)>=1){
-						echo "<a href='unfollow.php?userid=$id&username=$username' class='btn btn-default btn-xs' style='float:right;'>Unfollow</a>";
+					mysqli_close($conn);
+					if(mysqli_num_rows($query2)>=1){
+						echo "<a href='unfollow.php?userid=$id&username=$username' class='btn btn-default home-button'>Unfollow</a>";
 					}
 					else{
-						echo "<a href='follow.php?userid=$id&username=$username' class='btn btn-info btn-xs' style='float:right;'>Follow</a>";
+						echo "<a href='follow.php?userid=$id&username=$username' class='btn btn-info home-button'>Follow</a>";
 					}
 				}
 			}
 			else{
-				echo "<a href='./register.php' class='btn btn-info btn-xs' style='float:right;'>Signup</a>";
+				echo "<a href='./register.php' class='btn btn-info home-button'>Signup</a>";
 			}
 			echo "
-			<table style='margin-bottom:5px;'>
-				<tr>
-					<td>
-						<img src='./default.jpg' style='width:35px;'alt='display picture'/>
-					</td>
-					<td valign='top' style='padding-left:8px;'>
-						<h6><a href='./$username'>@$username</a>";
+			<div class='dashboard'>";
+		
 			include 'connect.php';
-			$query3 = mysql_query("SELECT id
+			if (isset($user_id)) {
+				$query3 = mysqli_query($conn, "SELECT id
 								   FROM following 
 								   WHERE user1_id='$id' AND user2_id='$user_id'
 								  ");
-			mysql_close($conn);
-			if(mysql_num_rows($query3)>=1){
-				echo " - <i>Follows You</i>";
+				mysqli_close($conn);
+			} else {
+				$query3 = mysqli_query($conn, "SELECT id
+								   FROM following 
+								   WHERE user1_id='$id'
+								  ");
+				mysqli_close($conn);
 			}
-			echo												"</h6>
-						<h6 style='width:300px;margin-top:-10px;'>Tweets: <a href='#'>$tweets</a> | Followers: <a href='#'>$followers</a> | Following: <a href='#'>$following</a></h6>
-					</td>
-				</tr>
-			</table>
+			if(mysqli_num_rows($query3)>=1){
+				$follows_you=true;
+			}
+			include "profilecard.php";
+			echo "</div>
+			<div class='timeline'>
+				<div class='tweetsHeader'>
+				Tweets
+				</div>
 			";
 			include "connect.php";
-			$tweets = mysql_query("SELECT username, tweet, timestamp
+			$tweets = mysqli_query($conn, "SELECT username, tweet, timestamp
 				FROM tweets
 				WHERE user_id = $id
 				ORDER BY timestamp DESC
 				LIMIT 0, 10
 				");
-			while($tweet = mysql_fetch_array($tweets)){
-				echo "<div class='well well-sm' style='padding-top:4px;padding-bottom:8px; margin-bottom:8px; overflow:hidden;'>";
-				echo "<div style='font-size:10px;float:right;'>".getTime($tweet['timestamp'])."</div>";
-				echo "<table>";
-				echo "<tr>";
-				echo "<td valign=top style='padding-top:4px;'>";
-				echo "<img src='./default.jpg' style='width:35px;'alt='display picture'/>";
-				echo "</td>";;
-				echo "<td style='padding-left:5px;word-wrap: break-word;' valign=top>";
-				echo "<a style='font-size:12px;' href='./".$tweet['username']."'>@".$tweet['username']."</a>";
-				$new_tweet = preg_replace('/@(\\w+)/','<a href=./$1>$0</a>',$tweet['tweet']);
-				$new_tweet = preg_replace('/#(\\w+)/','<a href=./hashtag/$1>$0</a>',$new_tweet);
-				echo "<div style='font-size:10px; margin-top:-3px;'>".$new_tweet."</div>";
-				echo "</td>";
-				echo "</tr>";
-				echo "</table>";
-				echo "</div>";
+			include "functions.php";
+			while($tweet = mysqli_fetch_array($tweets)){
+				display_tweet($tweet);
 			}
-			mysql_close($conn);
+			mysqli_close($conn);
 		}
 		else{
 			echo "<div class='alert alert-danger'>Sorry, this profile doesn't exist.</div>";
@@ -120,12 +113,8 @@ $user_id = $_SESSION['user_id'];
 		}
 	}
 	?>
-	<br>
-	<div class="jumbotron" style="padding:3px;">
-		<div class="container">
-			<h5>Made by <a href="http://simarsingh.ca">Simar</a></h5>  
-			<h5>This is Open Source - Fork it on <i class="fa fa-github"></i> <a href="https://github.com/iSimar/Twitter-Like-System-PHP">GitHub</a></h5>
-		</div>
 	</div>
+	<br>
+<?php include "footer.php"; ?>
 </body>
 </html>

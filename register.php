@@ -1,7 +1,9 @@
 <?php 
 // error_reporting (E_All^E_Notice);
 session_start();
-$user_id = $_SESSION['user_id'];
+if (isset($_SESSION['user_id'])) {
+	$user_id = $_SESSION['user_id'];
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -20,23 +22,23 @@ $user_id = $_SESSION['user_id'];
     <h3>Twitter-Like-System-PHP</h3>
     <h4>Register For An Account</h4>
 <?php
-if($_POST['btn']=="submit-register-form"){
+if(isset($_POST['btn']) && $_POST['btn']=="submit-register-form"){
   if($_POST['username']!="" && $_POST['password']!="" && $_POST['confirm-password']!=""){
     if($_POST['password']==$_POST['confirm-password']){
       include 'connect.php';
       $username = strtolower($_POST['username']);
-      $query = mysql_query("SELECT username 
+      $query = mysqli_query($conn, "SELECT username 
                             FROM users 
                             WHERE username='$username'
                             ");
-      mysql_close($conn);
-      if(!(mysql_num_rows($query)>=1)){
+      mysqli_close($conn);
+      if(!(mysqli_num_rows($query)>=1)){
           $password = md5($_POST['password']);
           include 'connect.php';
-          mysql_query("INSERT INTO users(username, password) 
+          mysqli_query($conn, "INSERT INTO users(username, password) 
                        VALUES ('$username', '$password')
                       ");
-          mysql_close($conn);
+          mysqli_close($conn);
           echo "<div class='alert alert-success'>Your account has been created!</div>";
           echo "<a href='.' style='width:300px;' class='btn btn-info'>Go Home</a>";
           echo "</form>";
@@ -67,12 +69,12 @@ if($_POST['btn']=="submit-register-form"){
 ?>
     <div class="input-group" style="margin-bottom:10px;">
       <span class="input-group-addon">@</span>
-      <input type="text" class="form-control" placeholder="Username" name="username" value="<?php echo $_POST['username']; ?>">
+      <input type="text" class="form-control" placeholder="Username" name="username" value="<?php if (isset($_POST['username'])) { echo $_POST['username']; } ?>">
     </div>
     <input type="password" style="margin-bottom:10px;" class="form-control" placeholder="Password" name="password">
     <input type="password" style="margin-bottom:10px;" class="form-control" placeholder="Confirm Password" name="confirm-password">
     <?php
-    if($error_msg){
+    if(isset($error_msg)){
         echo "<div class='alert alert-danger'>".$error_msg."</div>";
     }
     ?>

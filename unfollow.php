@@ -8,25 +8,25 @@ if($_GET['userid']  && $_GET['username']){
 		$unfollow_userid = $_GET['userid'];
 		$unfollow_username = $_GET['username'];
 		include 'connect.php';
-		$query = mysql_query("SELECT id
+		$query = mysqli_query($conn, "SELECT id
 							   FROM following 
 							   WHERE user1_id='$user_id' AND user2_id='$unfollow_userid'
 							  ");
-		mysql_close($conn);
-		if(mysql_num_rows($query)>=1){
+		mysqli_close($conn);
+		if(mysqli_num_rows($query)>=1){
 			include 'connect.php';
-			mysql_query("DELETE FROM following 
+			mysqli_query($conn,"DELETE FROM following 
 				WHERE user1_id='$user_id' AND user2_id='$unfollow_userid'
 				");
-			mysql_query("UPDATE users
+			mysqli_query($conn,"UPDATE users
 				SET following = following - 1
 				WHERE id='$user_id'
 				");
-			mysql_query("UPDATE users
+			mysqli_query($conn,"UPDATE users
 				SET followers = followers - 1
 				WHERE id='$unfollow_userid'
 				");
-			mysql_close($conn);
+			mysqli_close($conn);
 		}
 		header("Location: ./".$unfollow_username);
 	}
